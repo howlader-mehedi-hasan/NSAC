@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>International Space Station</title>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <script defer src="assets/main.js"></script>
+  <!-- Three.js and required libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    #model-container {
+      width: 100%;
+      height: 500px;
+      margin: 20px 0;
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .controls {
+      margin-bottom: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .color-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .color-btn:hover {
+      transform: scale(1.05);
+    }
+    #custom-color {
+      padding: 0;
+      width: 40px;
+      height: 40px;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="inner container">
+      <div class="brand"><span class="logo"></span> ISS | Cupola & NBL</div>
+      <a href="index.html">Home</a>
+      <a href="copulaWindow.html">Cupola</a>
+      <a href="neutralBuoyancyTraining.html">NBL</a>
+      <a href="earthDataLayers.html">ISS Data</a>
+      <a href="resources.html">Resources</a>
+      <div class="spacer"></div>
+      <a class="btn small" href="https://images.nasa.gov/" target="_blank" rel="noopener">NASA Library</a>
+    </div>
+  </nav>
+
+  <header class="hero container">
+    <h1>International Space Station</h1>
+    <p>Welcome to the International Space Station page. Here you can explore the wonders of the ISS, its research, and its contributions to science and humanity.</p>
+  </header>
+
+  <section class="container section">
+    <h2>About the ISS</h2>
+    <p>The International Space Station (ISS) is a modular space station (habitable artificial satellite) in low Earth orbit. It serves as a unique laboratory for scientific research and international cooperation.</p>
+  </section>
+
+  <section class="container section">
+    <h2>3D Model Explorer</h2>
+    <p>Interact with a 3D model of the International Space Station. Use your mouse to rotate, zoom, and pan around the model.</p>
+    <div class="controls">
+      <button class="color-btn" style="background-color: #ffffff;" onclick="setBackgroundColor('#ffffff')">White</button>
+      <button class="color-btn" style="background-color: #f0f0f0;" onclick="setBackgroundColor('#f0f0f0')">Light Gray</button>
+      <button class="color-btn" style="background-color: #e6f3ff;" onclick="setBackgroundColor('#e6f3ff')">Light Blue</button>
+      <input type="color" id="custom-color" value="#ffffff" title="Choose custom color" onchange="setBackgroundColor(this.value)">
+    </div>
+    <div id="model-container"></div>
+  </section>
+
+  <script>
+    // Scene Setup
+    const container = document.getElementById('model-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff); // Set initial background to white
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    // Camera position
+    camera.position.z = 5;
+
+    // Lighting Setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+
+    // OrbitControls Setup
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Load 3D Model
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+        'international_space_station_iss.glb',
+        function (gltf) {
+            // Center the model
+            const box = new THREE.Box3().setFromObject(gltf.scene);
+            const center = box.getCenter(new THREE.Vector3());
+            gltf.scene.position.sub(center);
+            
+            scene.add(gltf.scene);
+        },
+        function (xhr) {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        function (error) {
+            console.error('An error occurred loading the model:', error);
+        }
+    );
+
+    // Window resize handler
+    window.addEventListener('resize', onWindowResize, false);
+
+    function onWindowResize() {
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+    }
+
+    // Background color change function
+    function setBackgroundColor(color) {
+        scene.background = new THREE.Color(color);
+    }
+
+    // Animation Loop
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update(); // Required for damping
+        renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+
+  <footer class="container">
+    <div class="fgrid">
+      <div>
+        <div class="kicker">About</div>
+        <p class="small">Cupola & NBL media and datasets from official NASA sources with direct download links for high‑resolution assets.</p>
+      </div>
+      <div>
+        <div class="kicker">Official</div>
+        <p class="small"><a target="_blank" rel="noopener" href="https://www.nasa.gov/international-space-station/space-station-research-and-technology/">Station Research & Technology</a></p>
+        <p class="small"><a target="_blank" rel="noopener" href="https://www.nasa.gov/johnson/neutral-buoyancy-laboratory/">Neutral Buoyancy Laboratory</a></p>
+      </div>
+      <div>
+        <div class="kicker">Credits</div>
+        <p class="small">Imagery & data © NASA / Public Domain unless otherwise noted. Credit “NASA” when reusing.</p>
+      </div>
+    </div>
+    <div class="copyright small">Built for you with ❤️</div>
+  </footer>
+</body>
+</html>

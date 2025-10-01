@@ -1,0 +1,102 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ISS Sightings & NASA Open Data</title>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <script defer src="assets/main.js"></script>
+</head>
+<body>
+  
+<nav class="nav">
+  <div class="inner container">
+    <div class="brand"><span class="logo"></span> ISS | Cupola & NBL</div>
+    <a href="index.html">Home</a>
+    <a href="copulaWindow.html">Cupola</a>
+    <a href="neutralBuoyancyTraining.html">NBL</a>
+    <a href="earthDataLayers.html">ISS Data</a>
+    <a href="resources.html">Resources</a>
+    <div class="spacer"></div>
+    <a class="btn small" href="https://images.nasa.gov/" target="_blank" rel="noopener">NASA Library</a>
+  </div>
+</nav>
+
+  <section class="container section">
+    <div class="kicker">NASA Open Data</div>
+    <h2>ISS Sighting Opportunities</h2>
+    <p class="small">Use NASA’s “Spot the Station” widget to find visible passes at your location.</p>
+    <div class="grid cols-2">
+      <article class="card">
+        <div class="body">
+          <form id="sts-form" class="grid cols-2">
+            <div>
+              <label class="small">City</label>
+              <input class="input" id="city" placeholder="e.g., New York"/>
+            </div>
+            <div>
+              <label class="small">Region/State (use underscore)</label>
+              <input class="input" id="region" placeholder="e.g., New_York"/>
+            </div>
+            <div>
+              <label class="small">Country (use underscores)</label>
+              <input class="input" id="country" placeholder="e.g., United_States"/>
+            </div>
+          </form>
+          <div class="hr"></div>
+          <p class="small">Tip: Underscore instead of spaces in Region/Country.</p>
+        </div>
+      </article>
+      <article class="card">
+        <iframe id="sts-frame" title="Spot the Station" style="width:100%; height:480px; border:0; border-radius:var(--radius)"></iframe>
+      </article>
+    </div>
+  </section>
+
+  <section class="container section">
+    <h3>Dataset Links</h3>
+    <div class="grid cols-2">
+      <article class="card">
+        <div class="body">
+          <h3>ISS Trajectory & Sightings Registry</h3>
+          <p class="small">Browse daily ISS datasets (ephemeris + sighting XML).</p>
+          <div class="hr"></div>
+          <a class="btn" target="_blank" rel="noopener" href="https://data.nasa.gov/dataset/?tags=trajectory">Browse Registry</a>
+        </div>
+      </article>
+      <article class="card">
+        <div class="body">
+          <h3>Example Dataset</h3>
+          <ul class="small">
+            <li><a target="_blank" rel="noopener" href="https://data.nasa.gov/dataset/iss-coords-2021-07-27">Dataset page</a></li>
+            <li><a target="_blank" rel="noopener" href="https://nasa-public-data.s3.amazonaws.com/iss-coords/2021-07-27/ISS_OEM/ISS.OEM_J2K_EPH.txt">Ephemeris (TXT)</a></li>
+            <li><a target="_blank" rel="noopener" href="https://nasa-public-data.s3.amazonaws.com/iss-coords/2021-07-27/XMLsightingData_citiesUSA09.xml">US sightings (XML)</a></li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  
+<footer class="container">
+  <div class="fgrid">
+    <div>
+      <div class="kicker">About</div>
+      <p class="small">Cupola & NBL media and datasets from official NASA sources with direct download links for high‑resolution assets.</p>
+    </div>
+    <div>
+      <div class="kicker">Official</div>
+      <p class="small"><a target="_blank" rel="noopener" href="https://www.nasa.gov/international-space-station/space-station-research-and-technology/">Station Research & Technology</a></p>
+      <p class="small"><a target="_blank" rel="noopener" href="https://www.nasa.gov/johnson/neutral-buoyancy-laboratory/">Neutral Buoyancy Laboratory</a></p>
+    </div>
+    <div>
+      <div class="kicker">Credits</div>
+      <p class="small">Imagery & data © NASA / Public Domain unless otherwise noted. Credit “NASA” when reusing.</p>
+    </div>
+  </div>
+  <div class="copyright small">Built for you with ❤️</div>
+</footer>
+
+</body>
+</html>
