@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ISS Sightings & NASA Open Data</title>
   <link rel="stylesheet" href="assets/styles.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121/Build/Cesium/Widgets/widgets.css"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/cesium@1.121/Build/Cesium/Cesium.js"></script>
   <script defer src="assets/main.js"></script>
 </head>
 <body>
@@ -26,7 +27,7 @@
   <section class="container section">
     <div class="kicker">NASA Open Data</div>
     <h2>ISS Sighting Opportunities</h2>
-    <p class="small">Use NASA’s “Spot the Station” widget to find visible passes at your location.</p>
+    <p class="small">Use NASA's "Spot the Station" widget to find visible passes at your location.</p>
     <div class="grid cols-2">
       <article class="card">
         <div class="body">
@@ -45,12 +46,34 @@
             </div>
           </form>
           <div class="hr"></div>
-          <p class="small">Tip: Underscore instead of spaces in Region/Country.</p>
+          <p class="small">Tip: Use an underscore instead of spaces in Region and Country.</p>
         </div>
       </article>
       <article class="card">
         <iframe id="sts-frame" title="Spot the Station" style="width:100%; height:480px; border:0; border-radius:var(--radius)"></iframe>
       </article>
+    </div>
+  </section>
+
+  <section class="container section">
+    <div class="kicker">Orbital Perspective</div>
+    <h3>Google Earth View: South Pacific Flyover</h3>
+    <div class="card orbit-card">
+      <div class="orbit-layout">
+        <div id="earth-orbit-map" class="orbit-map" aria-label="Interactive globe showing a South Pacific perspective">
+          <div class="orbit-credit">Imagery (c) OpenStreetMap contributors</div>
+        </div>
+        <div class="orbit-info">
+          <p>This globe recreates the Google Earth vantage point you shared (lat -3.834 deg, lon -142.989 deg) from roughly 19,900 km above the South Pacific. Rotate or zoom to explore the surrounding ocean and equatorial Pacific islands.</p>
+          <ul class="orbit-facts">
+            <li>Imagery sourced from open OpenStreetMap tiles, rendered on a 3D globe.</li>
+            <li>Camera heading and tilt are matched to the 207 deg / 60 deg view from your Google Maps link.</li>
+            <li>Orange marker pins the exact coordinate so you can recenter after moving around.</li>
+          </ul>
+          <p class="small">Tip: Shift+drag for tilt, scroll to zoom. Use the reset button below if you want to snap back to the shared viewpoint.</p>
+          <button class="btn ghost small" type="button" data-reset-orbit>Reset View</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -83,7 +106,7 @@
   <div class="fgrid">
     <div>
       <div class="kicker">About</div>
-      <p class="small">Cupola & NBL media and datasets from official NASA sources with direct download links for high‑resolution assets.</p>
+      <p class="small">Cupola & NBL media and datasets from official NASA sources with direct download links for high resolution assets.</p>
     </div>
     <div>
       <div class="kicker">Official</div>
@@ -92,10 +115,10 @@
     </div>
     <div>
       <div class="kicker">Credits</div>
-      <p class="small">Imagery & data © NASA / Public Domain unless otherwise noted. Credit “NASA” when reusing.</p>
+      <p class="small">Imagery & data - NASA / Public Domain unless otherwise noted. Credit "NASA" when reusing.</p>
     </div>
   </div>
-  <div class="copyright small">Built for you with ❤️</div>
+  <div class="copyright small">Built for you with care</div>
 </footer>
 
 </body>

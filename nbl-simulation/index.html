@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NBL/EVA Training Simulator — Starter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Three.js r128 (matches your existing prototype) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --ui-bg: rgba(12, 20, 30, 0.6);
+      --ui-border: rgba(180, 220, 255, 0.25);
+      --ui-text: #e8f2ff;
+      --accent: #46b1ff;
+    }
+    html, body { height: 100%; margin: 0; }
+    body { background: #04141c; color: var(--ui-text); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
+    #app { position: fixed; inset: 0; }
+
+    /* HUD / UI */
+    .hud {
+      position: absolute; top: 12px; left: 12px; padding: 12px 14px;
+      background: var(--ui-bg); backdrop-filter: blur(6px);
+      border: 1px solid var(--ui-border); border-radius: 8px; min-width: 260px;
+      font-size: 13px; line-height: 1.35;
+    }
+    .hud h3 { margin: 0 0 8px 0; font-size: 14px; letter-spacing: 0.3px; color: #bde0ff; }
+    .readout { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center; }
+    .readout .label { color: #a9c7e6; }
+    .bar {
+      height: 6px; background: rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden;
+    }
+    .bar > span {
+      display: block; height: 100%; background: linear-gradient(90deg,#43e,#4bd,#5ef);
+      width: var(--w, 50%);
+    }
+    .row { display: contents; }
+    .caps { text-transform: uppercase; letter-spacing: 0.6px; font-size: 11px; color: #8fb9dd; }
+
+    .help {
+      position: absolute; bottom: 12px; left: 12px; padding: 10px 12px; border-radius: 8px;
+      background: var(--ui-bg); border: 1px solid var(--ui-border); font-size: 12px;
+    }
+    .help kbd { padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+    .menu {
+      position: absolute; top: 12px; right: 12px; display: grid; gap: 6px;
+      background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: 8px; padding: 8px;
+    }
+    .menu button {
+      border: 1px solid var(--ui-border); background: rgba(255,255,255,0.06); color: var(--ui-text);
+      border-radius: 6px; padding: 8px 10px; cursor: pointer;
+    }
+    .menu button:hover{ border-color: #7fc6ff; }
+    .status {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: 8px; padding: 6px 10px; font-size: 12px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; background: #f55; }
+    .dot.ok { background: #4ad66d; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- HUD -->
+  <div class="hud" id="hud">
+    <h3>EVA Suit HUD</h3>
+    <div class="readout">
+      <div class="row">
+        <div class="label">O₂</div>
+        <div class="bar"><span id="o2bar"></span></div>
+        <div id="o2val">100%</div>
+      </div>
+      <div class="row">
+        <div class="label">CO₂</div>
+        <div class="bar"><span id="co2bar"></span></div>
+        <div id="co2val">0.0</div>
+      </div>
+      <div class="row">
+        <div class="label">Pressure</div>
+        <div class="caps" id="pval">4.3 psi</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div class="label">Temp</div>
+        <div class="caps" id="tval">295 K</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div class="label">Buoyancy</div>
+        <div class="caps" id="bval">Neutral</div>
+        <div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock / Tether status -->
+  <div class="status" id="lockStatus"><span class="dot" id="lockDot"></span>Pointer Lock: <strong id="lockText">Released</strong></div>
+
+  <!-- Help -->
+  <div class="help">
+    <div><span class="caps">Controls</span> — <kbd>Click</kbd> to capture • Move: <kbd>WASD</kbd> <kbd>Space</kbd>/<kbd>Ctrl</kbd> • Roll: <kbd>Q</kbd>/<kbd>E</kbd> • Brake: <kbd>Shift</kbd></div>
+    <div>Handhold: <kbd>G</kbd> (pull) • Tether: <kbd>T</kbd> • Ballast: <kbd>[</kbd>/<kbd>]</kbd> • Modules: <kbd>1</kbd>–<kbd>5</kbd></div>
+  </div>
+
+  <!-- Module menu -->
+  <div class="menu">
+    <button data-mod="1">I. EVA Training</button>
+    <button data-mod="2">II. Tools</button>
+    <button data-mod="3">III. Procedure</button>
+    <button data-mod="4">IV. Contingency</button>
+    <button data-mod="5">V. Suit Check</button>
+  </div>
+
+  <script>
+    // ===== Basic Three.js setup =====
+    const root = document.getElementById('app');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x062b3b);
+    scene.fog = new THREE.FogExp2(0x062b3b, 0.045);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.physicallyCorrectLights = true;
+    root.appendChild(renderer.domElement);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+    const player = new THREE.Object3D();
+    player.position.set(0, 1.6, 6);
+    player.add(camera);
+    scene.add(player);
+
+    // ===== Lighting: soft underwater feel =====
+    const hemi = new THREE.HemisphereLight(0x7fb8ff, 0x082233, 0.7);
+    scene.add(hemi);
+
+    const surfaceKey = new THREE.DirectionalLight(0x9fd7ff, 0.9);
+    surfaceKey.position.set(10, 20, 5);
+    surfaceKey.castShadow = false;
+    scene.add(surfaceKey);
+
+    const fill = new THREE.PointLight(0x1a88ff, 0.4, 100, 2);
+    fill.position.set(-8, 2, -6);
+    scene.add(fill);
+
+    // ===== Pool: interior box volume approximating NBL (62 x 12 x 31 m) =====
+    const pool = new THREE.Mesh(
+      new THREE.BoxGeometry(62, 12, 31),
+      new THREE.MeshPhongMaterial({ color: 0x0b4f6c, side: THREE.BackSide, transparent: true, opacity: 0.92 })
+    );
+    scene.add(pool);
+
+    // Optional surface plane for subtle shimmer
+    const surface = new THREE.Mesh(
+      new THREE.PlaneBufferGeometry(62, 31, 1, 1),
+      new THREE.MeshPhongMaterial({ color: 0x157497, transparent: true, opacity: 0.5 })
+    );
+    surface.rotation.x = -Math.PI / 2;
+    surface.position.y = 6; // top of pool
+    scene.add(surface);
+
+    // ===== Suspended particulates =====
+    const particleCount = 1200;
+    const pGeom = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      positions[i*3+0] = (Math.random() - 0.5) * 56;
+      positions[i*3+1] = (Math.random() - 0.02) * 10; // bias a bit below surface
+      positions[i*3+2] = (Math.random() - 0.5) * 25;
+    }
+    pGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const pMat = new THREE.PointsMaterial({ color: 0xbfe8ff, size: 0.035, opacity: 0.6, transparent: true });
+    const particles = new THREE.Points(pGeom, pMat);
+    scene.add(particles);
+
+    // ===== Simple astronaut placeholder at origin =====
+    const astro = new THREE.Mesh(
+      new THREE.BoxGeometry(0.4, 0.6, 0.3),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.0, roughness: 0.8 })
+    );
+    astro.position.set(0, 0, 0);
+    scene.add(astro);
+
+    // ===== Simple mockups & handrails =====
+    const interactables = [];
+    const handrailMat = new THREE.MeshStandardMaterial({ color: 0xfff2ae, emissive: 0x111000, roughness: 0.6 });
+
+    function makeHandrail(pos, len = 2.0) {
+      const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, len, 12), handrailMat.clone());
+      rail.rotation.z = Math.PI / 2;
+      rail.position.copy(pos);
+      rail.userData.type = 'handrail';
+      scene.add(rail);
+      interactables.push(rail);
+      return rail;
+    }
+
+    // ISS-like cylinder mockup + rails
+    const moduleShell = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.2, 6, 24, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0x8aa6b8, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide })
+    );
+    moduleShell.position.set(-8, 0, 0);
+    moduleShell.rotation.z = Math.PI / 2;
+    scene.add(moduleShell);
+    // Handrails along the side
+    for (let i = -2; i <= 2; i++) makeHandrail(new THREE.Vector3(-8, i * 0.9, -1.8), 1.2);
+
+    // Truss-like frame + rails
+    const truss = new THREE.Mesh(
+      new THREE.BoxGeometry(6, 2, 2),
+      new THREE.MeshStandardMaterial({ color: 0x9bb7c9, roughness: 0.8 })
+    );
+    truss.position.set(10, 0, -4);
+    scene.add(truss);
+    makeHandrail(new THREE.Vector3(10, 0.6, -4), 2.0);
+    makeHandrail(new THREE.Vector3(10, -0.6, -4), 2.0);
+
+    // ===== Pointer lock + 6DOF movement with drag =====
+    const canvas = renderer.domElement;
+    let isLocked = false;
+
+    const lockDot = document.getElementById('lockDot');
+    const lockText = document.getElementById('lockText');
+    canvas.addEventListener('click', () => canvas.requestPointerLock());
+    document.addEventListener('pointerlockchange', () => {
+      isLocked = (document.pointerLockElement === canvas);
+      lockDot.classList.toggle('ok', isLocked);
+      lockText.textContent = isLocked ? 'Captured' : 'Released';
+    });
+
+    // Yaw/Pitch/Roll
+    let yaw = 0, pitch = 0, roll = 0;
+    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+    const mouseSensitivity = 0.002;
+
+    document.addEventListener('mousemove', (ev) => {
+      if (!isLocked) return;
+      yaw -= ev.movementX * mouseSensitivity;
+      pitch -= ev.movementY * mouseSensitivity;
+      const EPS = 1e-3;
+      const maxPitch = Math.PI / 2 - EPS;
+      pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
+    });
+
+    // Movement state
+    const keys = {};
+    document.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+
+      if (e.code === 'KeyT') toggleTether();
+      if (e.code === 'KeyG') pullFromHandhold();
+      if (e.code === 'BracketLeft') buoyancyBias = Math.max(-1, buoyancyBias - 0.1);
+      if (e.code === 'BracketRight') buoyancyBias = Math.min( 1, buoyancyBias + 0.1);
+
+      // quick module teleporters (placeholders)
+      const map = { Digit1: [-5, 0.5,  3], Digit2: [ 9, 0.8, -6], Digit3: [ 0, 2.0, -10],
+                    Digit4: [ 15, 1.2, 2], Digit5: [ 0,  5.0,   0] };
+      if (map[e.code]) player.position.set(...map[e.code]);
+    });
+    document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+    // Roll
+    const baseRollSpeed = 1.6; // rad/s
+
+    // Velocity & drag (underwater feel)
+    const vel = new THREE.Vector3();
+    const accel = new THREE.Vector3();
+    let buoyancyBias = 0.0; // -1 sink, 0 neutral, +1 rise
+
+    function updateMovement(dt) {
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+      const right   = new THREE.Vector3(1, 0,  0).applyQuaternion(player.quaternion);
+      const up      = new THREE.Vector3(0, 1,  0).applyQuaternion(player.quaternion);
+
+      const thrust = 3.8; // m/s^2 (tuned for "heavy water")
+      accel.set(0, 0, 0);
+
+      // Translation
+      if (keys['KeyW']) accel.addScaledVector(forward,  thrust);
+      if (keys['KeyS']) accel.addScaledVector(forward, -thrust);
+      if (keys['KeyA']) accel.addScaledVector(right,   -thrust);
+      if (keys['KeyD']) accel.addScaledVector(right,    thrust);
+      if (keys['Space']) accel.addScaledVector(up,      thrust);
+      if (keys['ControlLeft'] || keys['ControlRight']) accel.addScaledVector(up, -thrust);
+
+      // Buoyancy bias (very gentle)
+      accel.addScaledVector(up, buoyancyBias * 0.9);
+
+      // Integrate velocity
+      vel.addScaledVector(accel, dt);
+
+      // Water drag (exponential damping). Shift increases damping (precision brake).
+      const baseDamp = 0.82, brakeDamp = 0.65;
+      const damp = (keys['ShiftLeft'] || keys['ShiftRight']) ? brakeDamp : baseDamp;
+      const dampExp = Math.pow(damp, dt * 60);
+      vel.multiplyScalar(dampExp);
+
+      // Integrate position
+      player.position.addScaledVector(vel, dt);
+
+      // Camera gentle bob
+      camera.position.y = 0.06 * Math.sin(perfNow * 0.5);
+    }
+
+    function updateOrientation(dt) {
+      // Roll keys
+      let rollDir = 0;
+      if (keys['KeyQ']) rollDir -= 1;
+      if (keys['KeyE']) rollDir += 1;
+      roll += rollDir * baseRollSpeed * dt;
+
+      euler.set(pitch, yaw, roll);
+      player.quaternion.setFromEuler(euler);
+    }
+
+    // ===== Handhold targeting & pull =====
+    const raycaster = new THREE.Raycaster();
+    let hovered = null;
+
+    function highlightTarget() {
+      if (!isLocked) { if (hovered) hovered.material.emissive.setHex(0x111000); hovered = null; return; }
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera); // center of screen
+      const hits = raycaster.intersectObjects(interactables, false);
+      const nearest = hits.find(h => h.distance < 2.2 && h.object.userData.type === 'handrail');
+      if (hovered && hovered !== nearest?.object) hovered.material.emissive.setHex(0x111000);
+      hovered = nearest?.object || null;
+      if (hovered) hovered.material.emissive.setHex(0x444400);
+    }
+    function pullFromHandhold() {
+      if (!hovered) return;
+      const dir = new THREE.Vector3().subVectors(hovered.position, player.position).normalize();
+      vel.addScaledVector(dir, 2.0); // small impulse
+    }
+
+    // ===== Tether (toggle + distance constraint) =====
+    let tether = { on: false, anchor: new THREE.Vector3(0,0,0), max: 5.5, line: null };
+    function toggleTether() {
+      tether.on = !tether.on;
+      if (tether.on) {
+        tether.anchor.copy(player.position);
+        if (!tether.line) {
+          const g = new THREE.BufferGeometry().setFromPoints([tether.anchor, player.position]);
+          const m = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
+          tether.line = new THREE.Line(g, m);
+          scene.add(tether.line);
+        }
+      } else if (tether.line) {
+        scene.remove(tether.line);
+        tether.line.geometry.dispose(); tether.line.material.dispose();
+        tether.line = null;
+      }
+    }
+    function updateTether() {
+      if (!tether.on) return;
+      const toPlayer = new THREE.Vector3().subVectors(player.position, tether.anchor);
+      const d = toPlayer.length();
+      if (d > tether.max && d > 0) {
+        toPlayer.setLength(tether.max);
+        player.position.copy(new THREE.Vector3().addVectors(tether.anchor, toPlayer));
+        // damp outward velocity
+        const outward = toPlayer.clone().normalize();
+        const vOut = outward.multiplyScalar(vel.dot(outward));
+        vel.sub(vOut.multiplyScalar(0.9));
+      }
+      if (tether.line) {
+        const pos = tether.line.geometry.attributes.position.array;
+        pos[0] = tether.anchor.x; pos[1] = tether.anchor.y; pos[2] = tether.anchor.z;
+        pos[3] = player.position.x; pos[4] = player.position.y; pos[5] = player.position.z;
+        tether.line.geometry.attributes.position.needsUpdate = true;
+      }
+    }
+
+    // ===== HUD updates =====
+    const $ = (id) => document.getElementById(id);
+    const o2bar = $('o2bar'), o2val = $('o2val');
+    const co2bar = $('co2bar'), co2val = $('co2val');
+    const pval = $('pval'), tval = $('tval'), bval = $('bval');
+
+    let o2 = 1.0;      // 1.0 == 100%
+    let co2 = 0.0;     // arbitrary units (displayed small)
+    let pressure = 4.3; // psi (static demo)
+    let tempK = 295;    // Kelvin (static demo)
+
+    function updateHUD(dt) {
+      // Activity loads O₂/CO₂ rates
+      const effort = THREE.MathUtils.clamp(vel.length() / 2.5, 0, 1);
+      o2 = Math.max(0, o2 - (0.006 + 0.012 * effort) * dt / 60);   // ~0.6–1.8% / minute
+      co2 = Math.min(1.0, co2 + (0.002 + 0.006 * effort) * dt);    // arbitrary accumulation
+
+      o2bar.style.setProperty('--w', (o2 * 100).toFixed(1) + '%');
+      o2val.textContent = Math.round(o2 * 100) + '%';
+
+      co2bar.style.setProperty('--w', (co2 * 100).toFixed(1) + '%');
+      co2val.textContent = (co2 * 10).toFixed(1); // display 0.0 – 10.0 scale
+
+      pval.textContent = pressure.toFixed(1) + ' psi';
+      tval.textContent = tempK.toFixed(0) + ' K';
+      bval.textContent = (buoyancyBias === 0) ? 'Neutral' : (buoyancyBias > 0 ? 'Positive' : 'Negative');
+
+      // Simple threshold coloring for O₂
+      const ok = o2 > 0.25;
+      o2bar.style.background = ok ? 'rgba(255,255,255,0.08)' : 'rgba(255,60,60,0.15)';
+    }
+
+    // ===== Module menu click handlers =====
+    document.querySelectorAll('.menu button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = btn.getAttribute('data-mod');
+        const targets = {
+          '1': new THREE.Vector3(-6, 0.8, -1),
+          '2': new THREE.Vector3(10, 0.6, -4),
+          '3': new THREE.Vector3(0, 1.0, -8),
+          '4': new THREE.Vector3(14, 1.2, 2),
+          '5': new THREE.Vector3(0, 4.5, 0),
+        };
+        player.position.copy(targets[m] || new THREE.Vector3(0,1.6,6));
+        vel.set(0,0,0);
+      });
+    });
+
+    // ===== Resize =====
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ===== Main loop =====
+    const clock = new THREE.Clock();
+    let perfNow = 0;
+
+    function animate() {
+      const dt = clock.getDelta();
+      perfNow += dt;
+
+      updateOrientation(dt);
+      updateMovement(dt);
+      updateTether();
+      highlightTarget();
+      updateHUD(dt);
+
+      // Drift particles a bit
+      const pos = particles.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) + (Math.sin(perfNow * 0.5 + i) * 0.02 - 0.005);
+        if (y > 5.8) y = -5.5;
+        pos.setY(i, y);
+      }
+      pos.needsUpdate = true;
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>
